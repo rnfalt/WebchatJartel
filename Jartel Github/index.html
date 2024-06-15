@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body{
+            margin:0;
+            padding:0;
+            background:#000;
+        }
+        #messages{
+            position: fixed;
+            left:0;
+            top:0;
+            width:100%;
+            height:calc( 100% - 50px );
+            background:#000;
+            overflow-y:auto;
+            padding:10px;
+            box-sizing: border-box;
+        }
+        #sendMsg{
+            position: fixed;
+            left:0;
+            bottom:0;
+            width: 100%;
+            height:50px;
+            background:#20b025;
+            color :blue
+        }
+        #msgTxt{
+            position: absolute;
+            left:0;
+            top:0;
+            width:calc(100% - 100px);
+            height:100%;
+            padding-left:10px;
+            box-sizing: border-box;
+        }
+        #msgBtn{
+            position: absolute;
+            right:0;
+            top:0;
+            width: 100px;
+            height:100%;
+        }
+        .outer{
+            width:100%;
+            margin-top:10px;
+            display:flex;
+        }
+        #inner{
+            padding:10px;
+            box-sizing: border-box;
+            border-radius:10px;
+        }
+        .me{
+            background:#148fd1;
+            color:#fff;
+        }
+        .notMe{
+            background:#c634e0;
+            color:#ececec;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="messages"></div>
+
+    <div id="sendMsg">
+        <input type="text" id="msgTxt" placeholder="Masukkan pesan...">
+        <input type="submit" id="msgBtn" value="Kirim" onclick="module.sendMsg()">
+    </div>
+
+    <script>
+        module = {};
+    </script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getDatabase, ref, set, remove, onChildAdded, onChildRemoved } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCZjFutC25A9ToGn6OD_1BLxSukceqrjZM",
+            authDomain: "jartelchat.firebaseapp.com",
+            databaseURL: "https://jartelchat-default-rtdb.firebaseio.com",
+            projectId: "jartelchat",
+            storageBucket: "jartelchat.appspot.com",
+            messagingSenderId: "432193338207",
+            appId: "1:432193338207:web:f31049b8f8f7f4cdfad4ea"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // variables
+        var msgTxt = document.getElementById('msgTxt');
+        var sender;
+        if(sessionStorage.getItem('sender')){
+            sender = sessionStorage.getItem('sender');
+        } else {
+            sender = prompt('Masukkan nama anda');
+            sessionStorage.setItem('sender',sender);
+        }
+
+        // Mengirim pesan
+        module.sendMsg = function sendMsg(){
+            var msg = msgTxt.value;
+            var timestamp = new Date().getTime();
+            set(ref(db,"messages/"+timestamp),{
+                msg : msg,
+                sender : sender
+            })
+
+            msgTxt.value="";
+        }
+
+        // Untuk menerima pesan
+        onChildAdded(ref(db,"messages"), (data)=>{
+            if(data.val().sender == sender){
+                messages.innerHTML += "<div style=justify-content:end class=outer id="+data.key+"><div id=inner class=me>you : "+data.val().msg+"<button id=dltMsg onclick=module.dltMsg("+data.key+")>DELETE</button></div></div>";
+            } else {
+                messages.innerHTML += "<div class=outer id="+data.key+"><div id=inner class=notMe>"+data.val().sender+" : "+data.val().msg+"</div></div>";
+            }
+        })
+
+        // Untuk menghapus pesan
+        module.dltMsg = function dltMsg(key){
+            remove(ref(db,"messages/"+key));
+        }
+
+        // menghapus data pesan
+        onChildRemoved(ref(db,"messages"),(data)=>{
+            var msgBox = document.getElementById(data.key);
+            messages.removeChild(msgBox);
+        })
+    </script>
+</body>
+
+</html>
